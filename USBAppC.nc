@@ -14,4 +14,9 @@ implementation {
 
     USBC.AMControl -> SerialActiveMessageC;
     USBC.AMSendT -> Send;
+
+    components new SensirionSht11C() as TempSensor;
+    USBC.TempRead -> TempSensor.Temperature;
+
+
 }

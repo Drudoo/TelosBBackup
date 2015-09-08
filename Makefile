@@ -1,2 +1,0 @@
-COMPONENT=USBAppC
-include $(MAKERULES)

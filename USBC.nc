@@ -8,6 +8,8 @@ module USBC {
 		interface Timer<TMilli>;
 		interface AMSend as AMSendT;
 		interface SplitControl as AMControl;
+
+		interface Read<uint16_t> as TempRead;
 	}
 }
 
@@ -20,9 +22,11 @@ implementation {
   	message_t package;
   	uint16_t counter = 0;
 
+  	uint16_t temparature;
+
 	event void Boot.booted() {
 		call AMControl.start();
-		//call Timer.startPeriodic(SAMPLING_FREQUENCY);
+		call Timer.startPeriodic(SAMPLING_FREQUENCY);
 	}
 
 	task void SendTemptoUart(){
@@ -31,7 +35,7 @@ implementation {
 
 			btrpkt->nodeid = TOS_NODE_ID;
 
-			btrpkt->temp = counter;
+			btrpkt->temp = temparature;
 
 			if (call AMSendT.send(AM_BROADCAST_ADDR, &package, sizeof(TemptoUartMsg)) == SUCCESS) {
 				busy=TRUE;
@@ -42,10 +46,10 @@ implementation {
     }
 
 	event void Timer.fired() {
-		if (LEDon) {
+		if (LEDon && !busy) {
 			call Leds.led1On();
-			counter++;
-			post SendTemptoUart();
+			call Leds.led0On();
+			call TempRead.read();
 			LEDon = FALSE;
 		} else {
 			call Leds.led1Off();
@@ -69,5 +73,14 @@ implementation {
 
 	event void AMControl.stopDone(error_t err) {
 	
+	}
+
+	event void TempRead.readDone(error_t result, uint16_t data) {
+		if (result == SUCCESS){
+			temparature=data;
+			post SendTemptoUart();
+			call Leds.led0Off();
+		} else {
+		}
 	}
 }
